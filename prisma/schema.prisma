@@ -1,0 +1,885 @@
+datasource db {
+  provider = "postgresql"
+  // Used for dev
+  // url               = env("POSTGRESQL_PRODUCTION_URL")
+  url      = env("POSTGRESQL_URL")
+  // shadowDatabaseUrl = env("POSTGRESQL_SHADOW_URL")
+}
+
+generator prisma_client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                    String               @id @default(cuid())
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  machineId             String?              @unique
+  email                 String?              @unique
+  isEmailVerified       Boolean              @default(false)
+  name                  String?
+  nickname              String?
+  profilePhoto          String?
+  timezone              String?
+  currentCity           String?
+  currentCountry        String?
+  status                String?              @db.Text
+  pendingSetup          Boolean?
+  appVersion            String?
+  platform              String?
+  versionTime           DateTime?
+  doNotDisturb          Boolean?
+  desktopIdleMinutes    Int?
+  memberships           Member[]             @relation("UserMembership")
+  possiblyHasInvite     Boolean?
+  initiatedScreenShares ScreenShareRequest[] @relation("UserScreenShares")
+  calls                 Call[]               @relation("UserCalls", references: [id])
+  sentVoices            Voice[]              @relation("UserSentVoices")
+  receivedVoices        Voice[]              @relation("UserRecievedVoices")
+  playedVoices          Voice[]              @relation("VoicePlayedByUser")
+  seenVoices            Voice[]              @relation("VoiceSeenByUser")
+  Space                 Space[]              @relation("CreatedSpaces")
+  ScreenShareRequest    ScreenShareRequest?  @relation(fields: [screenShareRequestId], references: [id])
+  screenShareRequestId  String?              @map("ScreenShareRequest")
+  Status                Status[]             @relation("UserStatus")
+  Reaction              Reaction[]           @relation("UserReaction")
+  roomies               Roomie[]             @relation("UserRooms")
+  directRooms           Room[]               @relation("UserDirectRooms")
+  chatsSeen             ChatSeen[]           @relation("UserChatsSeen")
+  seenChats             ChatSeen[]           @relation("DmForUserChatsSeen")
+
+  avatarNode        DbNode?             @relation(fields: [avatarNodeId], references: [id])
+  avatarNodeId      String?             @unique
+  guests            Member[]            @relation("guestByUser")
+  avatar            Avatar?             @relation("UserAvatar")
+  // Used as the default for private dialogs
+  doorClosed        Boolean?
+  online            Boolean?
+  lastOnline        DateTime?
+  talking           Boolean?
+  sharing           Boolean?
+  activeSpaceId     String?
+  sentNotifications Notification[]      @relation("NotificationSender")
+  userActivity      UsersRoomActivity[] @relation("UserActivity")
+  presenceStatus    UserPresenceStatus? @relation("UserPresenceStatus")
+  createdDialogs    Dialog[]            @relation("UserDialogs")
+  userActivityLog   userActivityLog[]   @relation("userActivityLog")
+  QuickMessage      QuickMessage[]
+  rtcStats          RtcStats[]          @relation("UserRtcStats")
+  presence          Presence?           @relation("Presence")
+  PeerLog           PeerLog[]           @relation("UserPeerLog")
+  Message           Message[]
+  Topic             Topic[]             @relation("TopicOwner")
+
+  // Our personal chats that render sidebar
+  chats                  NewChat[]
+  peerOfChats            NewChat[]           @relation("DirectUserChat")
+  outgoingMessages       NewMessage[]        @relation("OutgoingMessages")
+  incomingDirectMessages NewMessage[]        @relation("IncomingDirectMessages")
+  GroupParticipants      GroupParticipants[]
+
+  UserSpaceStatuses UserSpaceStatuses[] @relation("UserSpacesStatuses")
+  Rate              Rate[]
+}
+
+model Member {
+  id                   String                 @id @default(cuid())
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  user                 User                   @relation("UserMembership", fields: [userId], references: [id])
+  userId               String                 @map("user")
+  space                Space                  @relation(fields: [spaceId], references: [id])
+  spaceId              String                 @map("space")
+  role                 PermissionRole
+  invitedCode          String?                @unique
+  guestPass            String?
+  guestByUser          User?                  @relation("guestByUser", fields: [guestByUserId], references: [id])
+  guestByUserId        String?                @map("guestByUser")
+  invitedByGuestPass   String?
+  inviteAccepted       Boolean?
+  SpaceJoinLinkVisitor SpaceJoinLinkVisitor[]
+  channels             Channel[]
+  // Type must be PersonalRoom (or Cubicle in the future)
+  homeNode             DbNode?
+  permitter            Permit?                @relation("permitter")
+  permits              Permit[]               @relation("memberAsksToPermit")
+}
+
+enum PermitType {
+  Guest
+}
+
+enum PermitStatus {
+  Granted
+  Revoked
+  Pending
+  Expired
+}
+
+model Permit {
+  id          String       @id @default(cuid())
+  type        PermitType
+  token       String?
+  status      PermitStatus
+  permitter   Member?      @relation("permitter", fields: [permitterId], references: [id])
+  permitterId String?      @unique @map("permitter")
+  member      Member       @relation("memberAsksToPermit", fields: [memberId], references: [id])
+  memberId    String       @map("member")
+  space       Space        @relation("permitSpace", fields: [spaceId], references: [id])
+  spaceId     String       @map("space")
+  expiredAt   DateTime?
+  grantedAt   DateTime?
+  createdAt   DateTime     @default(now())
+}
+
+enum PermissionRole {
+  Admin
+  Member
+  Guest
+}
+
+model SpaceJoinLinkVisitor {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  // Everyone has space based on `joinSecretCode` they had in url
+  space     Space    @relation(fields: [spaceId], references: [id])
+  spaceId   String   @map("space")
+  // Only people invited by email, have member attached, using their `invitedCode` they had in link emailed to them
+  member    Member?  @relation(fields: [memberId], references: [id])
+  memberId  String?  @map("member")
+  footprint String
+}
+
+model ScreenShareRequest {
+  id                 String    @id @default(cuid())
+  createdAt          DateTime  @default(now())
+  initiator          User      @relation("UserScreenShares", fields: [initiatorId], references: [id])
+  initiatorId        String    @map("initiator")
+  participants       User[]
+  sharedScreenUserId String
+  answered           Boolean?
+  cancelled          Boolean?
+  ended              Boolean?
+  expired            Boolean?
+  initiatedAt        DateTime  @default(dbgenerated())
+  expiredAt          DateTime?
+  answeredAt         DateTime?
+  rejectedAt         DateTime?
+  endedAt            DateTime?
+  qualityRate        Int?
+}
+
+model Voice {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  objectKey       String
+  durationSeconds Float
+  space           Space    @relation("SpaceVoices", fields: [spaceId], references: [id])
+  spaceId         String   @map("space")
+  sentBy          User     @relation("UserSentVoices", fields: [sentById], references: [id])
+  sentById        String   @map("sentBy")
+  recipient       User?    @relation("UserRecievedVoices", fields: [recipientId], references: [id])
+  recipientId     String?  @map("recipient")
+  channel         Channel? @relation("ChannelVoices", fields: [channelId], references: [id])
+  channelId       String?  @map("channel")
+  title           String?
+  played          Boolean? @default(false)
+  playedBy        User[]   @relation("VoicePlayedByUser")
+  seenBy          User[]   @relation("VoiceSeenByUser")
+}
+
+model PaidSubscription {
+  id          String             @id @default(cuid())
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  space       Space              @relation(fields: [spaceId], references: [id])
+  spaceId     String             @map("space")
+  amount      Float
+  description String?
+  status      SubscriptionStatus
+  plan_id     String?
+}
+
+enum SubscriptionStatus {
+  active
+  cancelled
+}
+
+enum CallFormat {
+  walkie
+  call
+  screen
+}
+
+model Call {
+  id           Int        @id @default(autoincrement())
+  createdAt    DateTime   @default(now())
+  callId       String
+  publicId     String?
+  participants User[]     @relation("UserCalls", references: [id])
+  space        Space      @relation(fields: [spaceId], references: [id])
+  spaceId      String     @map("space")
+  format       CallFormat @default(walkie)
+  initiatorId  String
+  answered     Boolean?
+  cancelled    Boolean?
+  ended        Boolean?
+  expired      Boolean?
+  initiatedAt  DateTime   @default(dbgenerated())
+  expiredAt    DateTime?
+  endedAt      DateTime?
+  answeredAt   DateTime?
+  qualityRate  Int?
+}
+
+model Channel {
+  id        String       @id @default(cuid())
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  name      String
+  icon      String?
+  status    String?
+  space     Space        @relation(fields: [spaceId], references: [id])
+  spaceId   String       @map("space")
+  members   Member[]
+  type      ChannelTypes
+  voices    Voice[]      @relation("ChannelVoices")
+  seenChats ChatSeen[]   @relation("ChannelChatsSeen")
+}
+
+enum ChannelTypes {
+  general
+  custom
+}
+
+model Status {
+  id         String          @id @default(cuid())
+  offset     Int?            @unique @default(autoincrement())
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  user       User            @relation("UserStatus", fields: [userId], references: [id])
+  userId     String          @map("user")
+  reactions  Reaction[]      @relation("UserStatusReaction")
+  space      Space[]         @relation("UserStatusReactionSpace")
+  type       StatusTypes
+  text       String
+  encryption EncryptionType? @default(Plain)
+  iv         String?
+
+  document   Document? @relation(fields: [documentId], references: [id])
+  documentId String?
+}
+
+enum StatusTypes {
+  general
+  local
+}
+
+model UserSpaceStatuses {
+  id      String @id @default(cuid())
+  user    User   @relation("UserSpacesStatuses", fields: [userId], references: [id])
+  userId  String
+  space   Space  @relation("UserSpaceStatuses", fields: [spaceId], references: [id])
+  spaceId String
+
+  lastSeenStatusId   String?
+  lastSeenStatusTime DateTime?
+}
+
+model Reaction {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation("UserReaction", fields: [userId], references: [id])
+  userId    String   @map("user")
+  status    Status   @relation("UserStatusReaction", fields: [statusId], references: [id])
+  statusId  String   @map("status")
+  emoji     String
+}
+
+model UserLoginCode {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  email      String   @unique
+  code       String
+  attempt    Int      @default(0)
+  isVerified Boolean  @default(false)
+}
+
+model Roomie {
+  id            Int      @id @default(autoincrement())
+  createdAt     DateTime @default(now())
+  joinedAt      DateTime @default(now())
+  position      Int?
+  groupId       String?
+  groupPosition Int?
+  user          User     @relation("UserRooms", fields: [userId], references: [id])
+  userId        String   @map("user")
+  room          Room     @relation("RoomMembers", fields: [roomId], references: [id])
+  roomId        String   @map("room")
+}
+
+enum RoomTypes {
+  public
+  unlisted
+  direct
+}
+
+model Room {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  secretId  String    @default(cuid())
+  topic     String    @default("")
+  minSpots  Int?
+  roomType  RoomTypes @default(public)
+
+  members      Roomie[] @relation("RoomMembers")
+  space        Space    @relation("SpaceRooms", fields: [spaceId], references: [id])
+  spaceId      String   @map("space")
+  // When room is created for direct message
+  directUser   User?    @relation("UserDirectRooms", fields: [directUserId], references: [id])
+  directUserId String?  @map("directUser")
+}
+
+// deprecated
+model ChatSeen {
+  id     String @id @default(cuid())
+  user   User   @relation("UserChatsSeen", fields: [userId], references: [id])
+  userId String @map("user")
+
+  dmForUser   User?    @relation("DmForUserChatsSeen", fields: [dmForUserId], references: [id])
+  dmForUserId String?  @map("dmForUser")
+  channel     Channel? @relation("ChannelChatsSeen", fields: [channelId], references: [id])
+  channelId   String?  @map("channel")
+  lastSeenAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum FeatureNames {
+  v2
+  feed
+}
+
+enum SpaceTypes {
+  free
+  pro
+}
+
+model Space {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  name           String
+  joinSecretCode String   @unique
+  creator        User?    @relation("CreatedSpaces", fields: [creatorId], references: [id])
+  creatorId      String?  @map("creator")
+  members        Member[]
+  // @deprecated
+  building       DbNode[] @relation("SpaceBuildings")
+  nodes          DbNode[] @relation("SpaceNodes")
+
+  channels             Channel[]
+  SpaceJoinLinkVisitor SpaceJoinLinkVisitor[]
+  PaidSubscription     PaidSubscription[]
+  Call                 Call[]
+  Voice                Voice[]                @relation("SpaceVoices")
+  Status               Status[]               @relation("UserStatusReactionSpace")
+  rooms                Room[]                 @relation("SpaceRooms")
+  Permit               Permit[]               @relation("permitSpace")
+  topics               Topic[]                @relation("SpaceTopics")
+  dialogs              Dialog[]
+  userActivityLog      userActivityLog[]
+  QuickMessage         QuickMessage[]
+  featurePreviews      FeatureNames[]
+  UserSpaceStatuses    UserSpaceStatuses[]    @relation("UserSpaceStatuses")
+  type                 SpaceTypes             @default(free)
+  logo                 Document?              @relation(fields: [documentId], references: [id])
+  documentId           String?
+}
+
+model DbNode {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // For "Person" nodes, it's memberId
+  uniqueId    String?  @unique
+  space       Space?   @relation("SpaceNodes", fields: [nodeSpaceId], references: [id])
+  nodeSpaceId String?  @map("space")
+
+  parentId   String?
+  parent     DbNode?  @relation("ParentRelation", fields: [parentId], references: [id])
+  children   DbNode[] @relation("ParentRelation")
+  type       NodeType
+  removed    Boolean  @default(false)
+  index      Float?   @default(0)
+  data       Json?
+  // Only for Person type nodes
+  avatarUser User?
+
+  // @deprecated
+  buildingForSpace   Space?  @relation("SpaceBuildings", fields: [buildingForSpaceId], references: [id])
+  buildingForSpaceId String? @map("buildingForSpace")
+  // @deprecated
+  owner              Member? @relation(fields: [ownerId], references: [id])
+  ownerId            String? @unique
+  spaceId            String?
+
+  @@map("Node")
+}
+
+enum NodeType {
+  // @deprecated
+  Desk
+  Avatar
+  Board
+  PersonalRoom
+  Custom
+  CoworkingDesk
+  WallFrame
+  PlantPot
+  Floor
+  Room
+  Building
+  // New
+  Grid
+  GridRoom
+}
+
+// enum FileType {
+//   Audio
+//   Document
+//   Photo
+//   Video
+//   Thumbnail
+//   VoiceNote
+//   Wallpaper
+
+// }
+
+enum FileType {
+  Audio
+  Document
+  Photo
+  Video
+  Thumbnail
+  VoiceNote
+  Wallpaper
+}
+
+enum FileStore {
+  S3
+}
+
+model File {
+  id           String   @id @default(cuid())
+  size         Int
+  expectedSize Int
+  type         FileType
+
+  store  FileStore
+  volume String
+  object String
+
+  createdAt DateTime @default(now())
+
+  // Fake fields
+  forPhoto      Photo? @relation("PhotoFile")
+  thumbForPhoto Photo? @relation("PhotoThumbnailFile")
+}
+
+model Photo {
+  id String @id @default(cuid())
+
+  file            File     @relation("PhotoFile", fields: [fileId], references: [id])
+  fileId          String   @unique
+  thumbnailFile   File     @relation("PhotoThumbnailFile", fields: [thumbnailFileId], references: [id])
+  thumbnailFileId String   @unique
+  createdAt       DateTime @default(now())
+
+  // fake fields
+  topic Topic?
+}
+
+enum RoomSpecialTypes {
+  lobby
+}
+
+model Dialog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // optional info - to remove the need for a topic to be created
+  title       String?
+  iconEmoji   String?
+  specialType RoomSpecialTypes?
+  sessionId   String?
+
+  avatars         Avatar[]
+  avatarCount     Int      @default(0)
+  doorClosed      Boolean?
+  silent          Boolean?
+  direct          Boolean?
+  index           Int      @default(1)
+  bgObjectId      String?
+  bgDarkenPercent Int      @default(0)
+
+  space   Space  @relation(fields: [spaceId], references: [id])
+  spaceId String
+
+  creator      User?          @relation("UserDialogs", fields: [creatorId], references: [id])
+  creatorId    String?
+  QuickMessage QuickMessage[]
+  chat         Chat?          @relation(fields: [chatId], references: [id])
+  chatId       String?        @unique
+  Rate         Rate[]
+}
+
+model Avatar {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation("UserAvatar", fields: [userId], references: [id])
+  userId String @unique
+
+  dialog   Dialog?  @relation(fields: [dialogId], references: [id])
+  dialogId String?
+  joinedAt DateTime
+}
+
+enum NotificationTypes {
+  nudge
+  screenShareInvite
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  sentAt    DateTime
+  expireAt  DateTime?
+
+  type       NotificationTypes
+  sender     User              @relation("NotificationSender", fields: [senderId], references: [id])
+  senderId   String
+  receiverId String
+  spaceId    String
+  dismissed  Boolean           @default(false)
+}
+
+model UsersRoomActivity {
+  id             Int       @id @default(autoincrement())
+  roomId         String
+  user           User      @relation("UserActivity", fields: [userId], references: [id])
+  userId         String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  joinedAt       DateTime
+  leftAt         DateTime?
+  duration       String?
+  roomSizeAtJoin Int?
+}
+
+enum PresenceStatusTypes {
+  focus
+  on
+  off
+}
+
+model UserPresenceStatus {
+  id        Int                 @id @default(autoincrement())
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  user      User                @relation("UserPresenceStatus", fields: [userId], references: [id])
+  userId    String              @unique
+  changedAt DateTime
+  type      PresenceStatusTypes
+}
+
+model AdminSettings {
+  id        String            @id @default(cuid())
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  enabled   Boolean
+  key       AdminSettingsKeys @unique
+  value     String
+  link      String?
+}
+
+enum AdminSettingsKeys {
+  maintenanceMode
+  messageMode
+}
+
+enum MediaSource {
+  camera
+  mic
+  screen
+}
+
+model RtcStats {
+  id         String @id @default(cuid())
+  user       User   @relation("UserRtcStats", fields: [userId], references: [id])
+  userId     String
+  peerUserId String
+  dialogId   String
+  sessionId  String
+
+  stats Json
+
+  peerId    String
+  roomSize  Int
+  sharing   MediaSource[]
+  createdAt DateTime      @default(now())
+}
+
+model userActivityLog {
+  id        String    @id @default(cuid())
+  user      User      @relation("userActivityLog", fields: [userId], references: [id])
+  userId    String    @map("user")
+  space     Space     @relation(fields: [spaceId], references: [id])
+  spaceId   String
+  // this start is when user start talking. if went out room our stop talking should add duration and make the last start null
+  start     DateTime
+  end       DateTime?
+  duration  Float
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model QuickMessage {
+  id       String  @id @default(cuid())
+  sender   User    @relation(fields: [senderId], references: [id])
+  senderId String
+  dialog   Dialog? @relation(fields: [dialogId], references: [id])
+  dialogId String?
+  space    Space?  @relation(fields: [spaceId], references: [id])
+  spaceId  String?
+
+  text      String?
+  objectId  String?
+  fileSize  Int?
+  sentAt    DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Presence {
+  id     String @id @default(cuid())
+  user   User   @relation("Presence", fields: [userId], references: [id])
+  userId String @unique
+
+  working       Boolean   @default(false)
+  workStartedAt DateTime?
+  workEndedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PeerLog {
+  id            String  @id @default(cuid())
+  user          User    @relation("UserPeerLog", fields: [userId], references: [id])
+  userId        String
+  peerUserId    String
+  connectedInMs Int?
+  failed        Boolean
+  sessionId     String
+  roomSize      Int
+
+  createdAt DateTime @default(now())
+}
+
+model Chat {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+  dialogId  String?   @unique
+  dialog    Dialog?
+  Topic     Topic?
+  TopicId   String?   @unique
+}
+
+enum EncryptionType {
+  Plain
+  AES
+}
+
+enum TopicType {
+  Group
+  Thread
+}
+
+enum GroupType {
+  Public
+  Private
+}
+
+model Topic {
+  id          String       @id @default(cuid())
+  iconEmoji   String?
+  title       String
+  space       Space        @relation("SpaceTopics", fields: [spaceId], references: [id])
+  spaceId     String
+  // Creator
+  owner       User?        @relation("TopicOwner", fields: [ownerId], references: [id])
+  ownerId     String?
+  // Deprected
+  chat        Chat?        @relation(fields: [chatId], references: [id])
+  chatId      String?      @unique
+  iconPhoto   Photo?       @relation(fields: [iconPhotoId], references: [id])
+  iconPhotoId String?      @unique
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  // Dummy
+  userChats   NewChat[]    @relation("TopicUserChat")
+  messages    NewMessage[] @relation("TopicMessages")
+
+  type      TopicType? @default(Group)
+  groupType GroupType  @default(Public)
+
+  groupParticipants GroupParticipants[]
+}
+
+model Message {
+  id         String          @id @default(cuid())
+  sender     User            @relation(fields: [senderId], references: [id])
+  senderId   String
+  chat       Chat            @relation(fields: [chatId], references: [id])
+  chatId     String
+  encryption EncryptionType? @default(Plain)
+  iv         String?
+
+
+  text      String?
+  objectId  String?
+  thumbnail String?
+  fileSize  Int?
+  sentAt    DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum MediaType {
+  None
+  File
+  Photo
+  Video
+  Voice
+  Gif
+}
+
+model NewMessage {
+  id          String          @id @default(cuid())
+  offset      BigInt?         @unique @default(autoincrement()) @db.BigInt
+  randomId    BigInt?         @unique
+  sender      User            @relation("OutgoingMessages", fields: [senderId], references: [id])
+  senderId    String
+  // Peer
+  peerUser    User?           @relation("IncomingDirectMessages", fields: [peerUserId], references: [id])
+  peerUserId  String?
+  peerTopic   Topic?          @relation("TopicMessages", fields: [peerTopicId], references: [id])
+  peerTopicId String?
+  encryption  EncryptionType? @default(Plain)
+  iv          String?
+  text        String?
+  edited      Boolean         @default(false)
+
+  mediaType  MediaType @default(None)
+  document   Document? @relation(fields: [documentId], references: [id])
+  documentId String?
+
+  mediaObjectId String?
+  thumbObjectId String?
+  fileSize      Int?
+  mediaW        Int?
+  mediaH        Int?
+
+
+  sentAt       DateTime
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  // Prisma forces to put this here
+  topMessageOf NewChat[]
+
+  replyToMessageId String?
+}
+
+model NewChat {
+  id                  String      @id @default(cuid())
+  user                User        @relation(fields: [userId], references: [id])
+  userId              String
+  maxReadInboxMsgId   String?
+  unreadCount         Int         @default(0)
+  unreadMentionsCount Int         @default(0)
+  pinned              Boolean     @default(false)
+  topMessage          NewMessage? @relation(fields: [topMessageId], references: [id])
+  topMessageId        String?
+  draft               String?
+  lastSeenMessageId   String?
+  // Peer
+  peerTopic           Topic?      @relation("TopicUserChat", fields: [peerTopicId], references: [id])
+  peerTopicId         String?
+  peerUser            User?       @relation("DirectUserChat", fields: [peerUserId], references: [id])
+  peerUserId          String?
+  updatedAt           DateTime    @default(now()) @updatedAt
+  muted               Boolean     @default(false)
+  hide                Boolean     @default(false)
+}
+
+model GroupParticipants {
+  id      String @id @default(cuid())
+  topic   Topic  @relation(fields: [topicId], references: [id])
+  topicId String
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  type          MediaType @default(None)
+  fileExt       String
+  fileName      String
+  size          Int
+  mediaW        Int?
+  mediaH        Int?
+  thumbObjectId String?
+  compressed    Boolean   @default(false)
+  remoteUrl     String?
+  remotePreview String?
+
+  // just ObjectId is encrypted
+  objectId   String
+  encryption EncryptionType? @default(Plain)
+  iv         String?
+  NewMessage NewMessage[]
+  Status     Status[]
+  Space      Space[]
+}
+
+model Rate {
+  id                  String   @id @default(cuid())
+  user                User     @relation(fields: [userId], references: [id])
+  userId              String
+  rate                Int
+  maximumParticipants Int
+  hasScreenShare      Boolean?
+  hasCamera           Boolean?
+
+  dialog   Dialog? @relation(fields: [dialogId], references: [id])
+  dialogId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+}
