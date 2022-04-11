@@ -1,6 +1,7 @@
-import { Link, Outlet, useLoaderData } from "remix";
+import { Link, Outlet, useLoaderData, useLocation } from "remix";
 import { NotionRenderer } from "react-notion-x";
 import { notion } from "~/utils/notion.server";
+import { useState } from "react";
 
 export const rootPageId = "Overview-e65926fae6094b1a962bf9ea44489139";
 const navigationPage = "Docs-abe4c4c94e4b440cb937514d8ddeec07";
@@ -25,38 +26,127 @@ export const loader = async () => {
     }
   }
 
-  return { allLinks };
+  return { allLinks, recordMap };
 };
 
 export default function Dashboard() {
-  const { allLinks } = useLoaderData();
-
+  const { allLinks, recordMap } = useLoaderData();
+  console.log(recordMap);
+  let { pathname } = useLocation();
   return (
     <div
       style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.4" }}
-      className=" p-10 mx-auto"
+      className=" mx-auto"
     >
-      <h1 className="font-bold from-neutral-700 text-3xl mb-5 w-20 sm:text-sm">
-        Noor
-      </h1>
+      <div className="flex flex-row ">
+        <aside className="w-72 bg-sidebg px-7 pt-7">
+          <div className="flex flex-row items-center">
+            <img src="/images/logo.svg" alt="logo" width={30} />
+            <h1 className="text-xl ml-1">
+              Noor
+              <span className="ml-1 text-textblue font-pacifico">Docs</span>
+            </h1>
+          </div>
 
-      <div className="flex flex-row">
-        <aside className="w-60">
-          {allLinks.map((link) => {
-            return (
-              <Link key={link.id} to={`${mapPageUrl(link.pageId)}`}>
-                {link.title}
-              </Link>
-            );
-          })}
+          <div className="pt-5">
+            <SideLink title="Rooms" pageId="73ad6242172241de829cc2d0ff858ca9" />
+            <SideLink
+              title="Feed"
+              items={[
+                {
+                  pageId: "8939d09406ba4446b5d9b51e488463ff",
+                  title: "When to use it",
+                },
+                {
+                  pageId: "7ef7586cb1f24e43a0d9633bf393de35",
+                  title: "How to use it",
+                },
+              ]}
+            />
+          </div>
         </aside>
-        <main className="w-full max-w-4xl">
+        <main className="w-full h-full">
           <Outlet />
         </main>
       </div>
     </div>
   );
 }
+
+//@ts-ignore
+const SideLink = ({
+  title,
+  items,
+  pageId,
+}: {
+  title: string;
+  pageId?: string;
+  items: { title: string; pageId: string }[];
+}) => {
+  let { pathname } = useLocation();
+  console.log({ pathname });
+  let [open, setOpen] = useState(false);
+  let pageLink = mapPageUrl(pageId);
+  return (
+    <>
+      <div
+        onClick={() => {
+          setOpen(!open);
+        }}
+        className="flex flex-row"
+      >
+        {items && (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="19"
+            height="19"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#A2A2A2"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            transform={open ? "rotate(90)" : ""}
+            style={{ paddingTop: 3 }}
+          >
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        )}
+
+        <Link to={pageLink}>
+          <p
+            className={`text-md pb-1 ${
+              !open ? "text-textgrey" : "text-textlightblue font-medium"
+            }`}
+          >
+            {title}
+          </p>
+        </Link>
+      </div>
+      {open &&
+        items &&
+        //@ts-ignore
+        items.map((item) => {
+          let pageLink = mapPageUrl(item.pageId);
+          return (
+            <div key={item.pageId}>
+              <div
+                style={{
+                  backgroundColor: pathname === pageLink ? "#DFECFF" : "",
+                  borderRadius: 8,
+                  paddingTop: 3,
+                }}
+              >
+                <Link to={pageLink}>
+                  <p className="text-md pl-6 pb-0">{item.title}</p>
+                </Link>
+              </div>
+            </div>
+          );
+        })}
+    </>
+  );
+};
 
 export const mapPageUrl = (pageId: string) => {
   pageId = (pageId || "").replace(/-/g, "");

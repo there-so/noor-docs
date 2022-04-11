@@ -17,10 +17,11 @@ export const PageContent = () => {
   const { recordMap } = useLoaderData();
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-4 w-full">
+    <div className="bg-white p-4 w-full ">
       <NotionRenderer
         recordMap={recordMap}
-        fullPage={false}
+        fullPage={true}
+        disableHeader={true}
         darkMode={false}
         mapPageUrl={mapPageUrl}
         showTableOfContents={true}

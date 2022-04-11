@@ -32,6 +32,10 @@ export function links() {
     { rel: "stylesheet", href: notionStyles2 },
     { rel: "stylesheet", href: notionStyles3 },
     { rel: "stylesheet", href: notionStyles4 },
+    {
+      rel: "stylesheet",
+      href: "https://fonts.googleapis.com/css2?family=Pacifico&display=swap&text=Docs",
+    },
   ];
 }
 
