@@ -3,8 +3,9 @@
  */
 module.exports = {
   appDirectory: "app",
-  assetsBuildDirectory: "public/build",
-  publicPath: "/build/",
+  // Use /docs as the base path for the documentation
+  assetsBuildDirectory: "docs/public/build",
+  publicPath: "/docs/build/",
   serverBuildDirectory: "build",
   devServerPort: 8002,
   ignoredRouteFiles: [".*"],
