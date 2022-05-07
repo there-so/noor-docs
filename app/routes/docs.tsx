@@ -1,18 +1,19 @@
-import { Link, Outlet, useLoaderData, useLocation } from "remix";
-import { NotionRenderer } from "react-notion-x";
-import { notion } from "~/utils/notion.server";
-import { useState } from "react";
 import {
-  getNavigationLinks,
-  getStalePageAndUpdate,
-  MiniPage,
-} from "~/utils/pageCache.server";
+  Link,
+  LoaderFunction,
+  Outlet,
+  useLoaderData,
+  useLocation,
+} from "remix";
+import { useState } from "react";
+import { getNavigationLinks, MiniPage } from "~/utils/pageCache.server";
 
 export const rootPageId = "Overview-e65926fae6094b1a962bf9ea44489139";
-const docsBlockId = "abe4c4c9-4e4b-440c-b937-514d8ddeec07";
 
-export const loader = async () => {
-  let pages = await getNavigationLinks();
+export const loader: LoaderFunction = async ({ request }) => {
+  let url = new URL(request.url);
+  let forceUpdate = Boolean(url.searchParams.get("forceUpdate"));
+  let pages = await getNavigationLinks(forceUpdate);
 
   return { pages };
 };
@@ -23,12 +24,12 @@ export default function Dashboard() {
   return (
     <div
       style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.4" }}
-      className=" mx-auto"
+      className="mx-auto"
     >
-      <div className="flex flex-row ">
-        <aside className="w-72 bg-sidebg px-7 pt-7">
+      <div className="flex flex-row max-w-screen-2xl mx-auto">
+        <aside className="w-72 bg-sidebg px-7 pt-7 flex-shrink-0">
           <div className="flex flex-row items-center">
-            <img src="/images/logo.svg" alt="logo" width={30} />
+            <img src="/docs-assets/images/logo.svg" alt="logo" width={30} />
             <h1 className="text-xl ml-1">
               Noor
               <Link to="/docs">
@@ -74,7 +75,7 @@ const SideLink = ({
 }) => {
   let { pathname } = useLocation();
   let [open, setOpen] = useState(false);
-  let pageLink = pageId ? mapPageUrl(pageId) : null;
+  let pageLink = pageId ? mapPageUrl(pageId, title) : null;
   let hasChildren = items && items.length > 0;
   let inRootPage = pathname === pageLink;
 
@@ -123,7 +124,7 @@ const SideLink = ({
         hasChildren &&
         items &&
         items.map((item) => {
-          let pageLink = mapPageUrl(item.id);
+          let pageLink = mapPageUrl(item.id, item.title);
 
           return (
             <div key={item.id}>
@@ -147,12 +148,19 @@ const SideLink = ({
   );
 };
 
-export const mapPageUrl = (pageId: string) => {
+export const mapPageUrl = (pageId: string, name?: string) => {
   pageId = (pageId || "").replace(/-/g, "");
 
   if (rootPageId && pageId === rootPageId) {
     return "/docs";
   } else {
-    return `/docs/${pageId}`;
+    // Add dashed name before utl to make it more beautiful
+    return `/docs/${name ? nameToSafeUrl(name) + "-" : ""}${pageId}`;
   }
 };
+
+function nameToSafeUrl(name: string) {
+  return name
+    .replace(/\s/g, "-")
+    .replace(/[`~!@#$%^&*()_|+=?;:'",.<>{}[\]\\/]/gi, "");
+}

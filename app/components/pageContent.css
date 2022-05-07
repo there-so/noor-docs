@@ -22,7 +22,7 @@
 
 .notion-page {
   width: 100%;
-  padding-left: calc(min(80px, 8vw));
+  padding-left: calc(min(30px, 8vw));
 }
 
 .notion-page-content-inner {
