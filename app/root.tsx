@@ -21,8 +21,10 @@ import notionStyles3 from "rc-dropdown/assets/index.css";
 // used for rendering equations (optional)
 import notionStyles4 from "katex/dist/katex.min.css";
 
+import pageContentStyles from "~/components/pageContent.css";
+
 export const meta: MetaFunction = () => {
-  return { title: "New Remix App" };
+  return { title: "Noor Docs" };
 };
 
 export function links() {
@@ -32,6 +34,7 @@ export function links() {
     { rel: "stylesheet", href: notionStyles2 },
     { rel: "stylesheet", href: notionStyles3 },
     { rel: "stylesheet", href: notionStyles4 },
+    { rel: "stylesheet", href: pageContentStyles },
     {
       rel: "stylesheet",
       href: "https://fonts.googleapis.com/css2?family=Pacifico&display=swap&text=Docs",

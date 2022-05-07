@@ -1,10 +1,12 @@
-import { LoaderFunction, useLoaderData } from "remix";
-import { NotionRenderer } from "react-notion-x";
-import { notion } from "~/utils/notion.server";
+import { LoaderFunction } from "remix";
+import { PageContent } from "~/components/PageContent";
 import { rootPageId } from "~/routes/docs";
+import { notion } from "~/utils/notion.server";
+import { getStalePageAndUpdate } from "~/utils/pageCache.server";
 
 export const loader: LoaderFunction = async ({ request, params }) => {
-  const recordMap = await notion.getPage(params.pageId || rootPageId);
+  let pageId = params.pageId || rootPageId;
+  const recordMap = await getStalePageAndUpdate(pageId);
 
   return { recordMap };
 };
@@ -12,31 +14,3 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 export default function Dashboard() {
   return <PageContent />;
 }
-
-export const PageContent = () => {
-  const { recordMap } = useLoaderData();
-
-  return (
-    <div className="bg-white p-4 w-full ">
-      <NotionRenderer
-        recordMap={recordMap}
-        fullPage={true}
-        disableHeader={true}
-        darkMode={false}
-        mapPageUrl={mapPageUrl}
-        showTableOfContents={true}
-        rootDomain="/posts/"
-      />
-    </div>
-  );
-};
-
-export const mapPageUrl = (pageId: string) => {
-  pageId = (pageId || "").replace(/-/g, "");
-
-  if (rootPageId && pageId === rootPageId) {
-    return "/";
-  } else {
-    return `/${pageId}`;
-  }
-};
