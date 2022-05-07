@@ -1,4 +1,4 @@
-import { LoaderFunction, MetaFunction } from "remix";
+import { json, LoaderFunction, MetaFunction } from "remix";
 import { PageContent } from "~/components/PageContent";
 import { rootPageId } from "~/routes/docs";
 import { notion } from "~/utils/notion.server";
@@ -12,7 +12,9 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   const recordMap = await getStalePageAndUpdate(pageId);
   let title = getPageTitleFromRecordsMap(recordMap);
 
-  return { recordMap, title };
+  let headers = { "Cache-Control": "stale-while-revalidate=86400" };
+
+  return json({ recordMap, title }, { headers });
 };
 
 export const meta: MetaFunction = ({ data }) => {
