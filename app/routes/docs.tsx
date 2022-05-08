@@ -1,4 +1,5 @@
 import {
+  json,
   Link,
   LoaderFunction,
   Outlet,
@@ -18,7 +19,11 @@ export const loader: LoaderFunction = async ({ request }) => {
   let forceUpdate = Boolean(url.searchParams.get("forceUpdate"));
   let pages = await getNavigationLinks(forceUpdate);
 
-  return { pages };
+  let headers = {
+    "Cache-Control": forceUpdate ? "" : "stale-while-revalidate=3600",
+  };
+
+  return json({ pages }, { headers });
 };
 
 export default function Dashboard() {
@@ -96,9 +101,13 @@ export default function Dashboard() {
 
 const selectedColor = "#e5effe";
 
-const SideLinkText = ({ children }: any) => {
+const SideLinkText = ({ children, active }: any) => {
   return (
-    <p className={`text-sm select-none text-slate-700 active:text-slate-500`}>
+    <p
+      className={`text-sm select-none text-slate-700 active:text-slate-500 ${
+        active ? "text-indigo-800" : ""
+      }`}
+    >
       {children}
     </p>
   );
@@ -151,14 +160,16 @@ const SideLink = ({
         <div style={{ width: 19 }} />
       )}
 
-      <SideLinkText>{title}</SideLinkText>
+      <SideLinkText active={inRootPage}>{title}</SideLinkText>
     </div>
   );
 
   return (
     <>
       {pageLink && !hasChildren ? (
-        <Link to={pageLink}>{titleNode}</Link>
+        <Link to={pageLink} prefetch="render">
+          {titleNode}
+        </Link>
       ) : (
         titleNode
       )}
