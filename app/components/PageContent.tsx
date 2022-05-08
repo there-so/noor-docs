@@ -1,5 +1,6 @@
 import { NotionRenderer } from "react-notion-x";
 import { useLoaderData } from "remix";
+import { Tweet } from "~/components/Tweet";
 import { rootPageId } from "~/routes/docs";
 
 export const PageContent = () => {
@@ -19,6 +20,9 @@ export const PageContent = () => {
         pageCover={false}
         pageHeader={false}
         showTableOfContents={true}
+        components={{
+          tweet: Tweet,
+        }}
         rootDomain="/posts/"
       />
     </div>

@@ -501,18 +501,6 @@ Ensure the default browser behavior of the `hidden` attribute.
   width: 18rem;
 }
 
-.w-60 {
-  width: 15rem;
-}
-
-.w-64 {
-  width: 16rem;
-}
-
-.max-w-7xl {
-  max-width: 80rem;
-}
-
 .max-w-screen-2xl {
   max-width: 1536px;
 }
@@ -542,11 +530,6 @@ Ensure the default browser behavior of the `hidden` attribute.
 
 .overflow-scroll {
   overflow: scroll;
-}
-
-.bg-slate-100 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(241 245 249 / var(--tw-bg-opacity));
 }
 
 .bg-white {
