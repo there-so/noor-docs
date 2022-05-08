@@ -756,6 +756,7 @@ __metadata:
     react-notion-x: ^4.17.0
     react-twitter-embed: ^4.0.4
     remix: ^1.2.3
+    spinners-react: ^1.0.7
     tailwindcss: ^3.0.23
     tiny-invariant: ^1.2.0
     type-fest: ^2.12.2
@@ -7177,6 +7178,18 @@ __metadata:
   version: 3.0.11
   resolution: "spdx-license-ids@npm:3.0.11"
   checksum: 1da1acb090257773e60b022094050e810ae9fec874dc1461f65dc0400cd42dd830ab2df6e64fb49c2db3dce386dd0362110780e1b154db7c0bb413488836aaeb
+  languageName: node
+  linkType: hard
+
+"spinners-react@npm:^1.0.7":
+  version: 1.0.7
+  resolution: "spinners-react@npm:1.0.7"
+  peerDependencies:
+    "@types/react": ^16.x || ^17.x || ^18.x
+    "@types/react-dom": ^16.x || ^17.x || ^18.x
+    react: ^16.x || ^17.x || ^18.x
+    react-dom: ^16.x || ^17.x || ^18.x
+  checksum: a06c67b89118721fd5042ef8927e193924de18701ee65724fc3bf158733a332ad1a06179e650c87ab16ea9af09a92a425131d1b53f0a8bc059588a7231fb3d31
   languageName: node
   linkType: hard
 
