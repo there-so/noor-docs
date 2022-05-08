@@ -1,7 +1,6 @@
 import { json, LoaderFunction, MetaFunction } from "remix";
 import { PageContent } from "~/components/PageContent";
 import { rootPageId } from "~/routes/docs";
-import { notion } from "~/utils/notion.server";
 import {
   getPageTitleFromRecordsMap,
   getStalePageAndUpdate,

@@ -1,12 +1,9 @@
-import { LoaderFunction } from "remix";
-import { notion } from "~/utils/notion.server";
+import { LoaderFunction, redirect } from "remix";
 import { rootPageId } from "~/routes/docs";
 import { PageContent } from "~/components/PageContent";
-import { getStalePageAndUpdate } from "~/utils/pageCache.server";
 
 export const loader: LoaderFunction = async ({ request, params }) => {
-  const recordMap = await getStalePageAndUpdate(rootPageId);
-  return { recordMap };
+  return redirect(`/docs/${rootPageId}`);
 };
 
 export default function Dashboard() {

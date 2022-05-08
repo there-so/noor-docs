@@ -80,7 +80,10 @@ export default function Dashboard() {
           </div>
         </aside>
         <main className="w-full h-full flex-grow">
-          {state === "loading" ? (
+          {/* No spinner if it's not taking long */}
+          <Outlet />
+
+          {/* {state === "loading" ? (
             <div className="flex items-center justify-start w-full h-full">
               <SpinnerCircular
                 color="#51b9ff"
@@ -92,7 +95,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <Outlet />
-          )}
+          )} */}
         </main>
       </div>
     </div>

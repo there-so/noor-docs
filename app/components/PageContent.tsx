@@ -1,7 +1,8 @@
 import { NotionRenderer } from "react-notion-x";
 import { useLoaderData } from "remix";
 import { Tweet } from "~/components/Tweet";
-import { rootPageId } from "~/routes/docs";
+import { mapPageUrl } from "~/routes/docs";
+import * as notion from "notion-types";
 
 export const PageContent = () => {
   const { recordMap } = useLoaderData();
@@ -16,7 +17,7 @@ export const PageContent = () => {
         fullPage={true}
         disableHeader={true}
         darkMode={false}
-        mapPageUrl={mapPageUrl}
+        mapPageUrl={mapPageUrlNotion(recordMap)}
         pageCover={false}
         pageHeader={false}
         showTableOfContents={true}
@@ -29,12 +30,10 @@ export const PageContent = () => {
   );
 };
 
-export const mapPageUrl = (pageId: string) => {
-  pageId = (pageId || "").replace(/-/g, "");
+export const mapPageUrlNotion =
+  (recordMap: notion.ExtendedRecordMap) => (pageId: string) => {
+    // Add title to link
+    let title = recordMap.block[pageId]?.value.properties?.title[0][0];
 
-  if (rootPageId && pageId === rootPageId) {
-    return "/";
-  } else {
-    return `/${pageId}`;
-  }
-};
+    return mapPageUrl(pageId, title || "");
+  };
