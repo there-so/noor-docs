@@ -23,7 +23,7 @@ export async function getPreviewImageMap(
 
   const previewImagesMap = Object.fromEntries(
     await pMap(urls, async (url) => [url, await getPreviewImage(url)], {
-      concurrency: 8,
+      concurrency: 12,
     })
   );
 

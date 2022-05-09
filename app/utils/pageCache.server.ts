@@ -62,7 +62,7 @@ export async function getStalePageAndUpdate(pageId: string) {
   }
 
   // 5 minutes cache
-  if (fromCache.date > Date.now() - 1000 * 60 * 5) {
+  if (fromCache.date < Date.now() - 1000 * 60 * 5) {
     // Get from cache and update for later
     fetchFresh().then((fresh) => {
       // Save to cache
