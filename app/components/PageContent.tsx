@@ -7,6 +7,8 @@ import * as notion from "notion-types";
 export const PageContent = () => {
   const { recordMap } = useLoaderData();
 
+  console.log(recordMap);
+
   return (
     <div
       className="bg-white p-4 w-full overflow-scroll"
@@ -21,8 +23,10 @@ export const PageContent = () => {
         pageCover={false}
         pageHeader={false}
         showTableOfContents={true}
+        // forceCustomImages={true}
+        previewImages={true}
         components={{
-          tweet: Tweet,
+          Tweet,
         }}
         rootDomain="/posts/"
       />
@@ -37,3 +41,9 @@ export const mapPageUrlNotion =
 
     return mapPageUrl(pageId, title || "");
   };
+
+const Image = (props: any) => {
+  console.log(props);
+
+  return null;
+};

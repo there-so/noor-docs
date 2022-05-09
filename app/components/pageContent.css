@@ -16,7 +16,7 @@
   width: 100%;
 }
 
-.notion-page-icon-wrapper {
+.notion-page-icon-wrapper , .notion-page-icon-span{
   display: none;
 }
 

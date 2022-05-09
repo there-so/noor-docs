@@ -16,7 +16,7 @@ import notionStyles1 from "react-notion-x/src/styles.css";
 import notionStyles2 from "prismjs/themes/prism-tomorrow.css";
 
 // used for collection views (optional)
-import notionStyles3 from "rc-dropdown/assets/index.css";
+// import notionStyles3 from "rc-dropdown/assets/index.css";
 
 // used for rendering equations (optional)
 import notionStyles4 from "katex/dist/katex.min.css";
@@ -32,7 +32,7 @@ export function links() {
     { rel: "stylesheet", href: styles },
     { rel: "stylesheet", href: notionStyles1 },
     { rel: "stylesheet", href: notionStyles2 },
-    { rel: "stylesheet", href: notionStyles3 },
+    // { rel: "stylesheet", href: notionStyles3 },
     { rel: "stylesheet", href: notionStyles4 },
     { rel: "stylesheet", href: pageContentStyles },
     {

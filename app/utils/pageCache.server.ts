@@ -3,6 +3,7 @@ import { notion } from "~/utils/notion.server";
 import { Client } from "@notionhq/client";
 import { ListBlockChildrenResponse } from "@notionhq/client/build/src/api-endpoints";
 import { IterableElement } from "type-fest";
+import { getPreviewImageMap } from "~/utils/preview.server";
 
 type PageCacheEntry = {
   date: number;
@@ -31,12 +32,25 @@ if (process.env.NODE_ENV === "production") {
 }
 
 // Functions
+const previewImagesEnabled = true;
 
 export async function getStalePageAndUpdate(pageId: string) {
   let fromCache = pageCache.pages.get(pageId);
 
+  async function fetchFresh() {
+    let recordMap = await notion.getPage(pageId);
+
+    // ref: https://github.com/NotionX/react-notion-x/blob/ce01badd2b544ffe8505cc883f650f9d54d3fa27/examples/full/lib/notion.ts
+    if (previewImagesEnabled) {
+      // These data never get stale, so we can just use the cached version always
+      const previewImageMap = await getPreviewImageMap(recordMap);
+      (recordMap as any).preview_images = previewImageMap;
+    }
+    return recordMap;
+  }
+
   if (!fromCache) {
-    let fresh = await notion.getPage(pageId);
+    let fresh = await fetchFresh();
 
     // Save to cache
     pageCache.pages.set(pageId, {
@@ -47,14 +61,17 @@ export async function getStalePageAndUpdate(pageId: string) {
     return fresh;
   }
 
-  // Get from cache and update for later
-  notion.getPage(pageId).then((fresh) => {
-    // Save to cache
-    pageCache.pages.set(pageId, {
-      date: Date.now(),
-      recordMap: fresh,
+  // 5 minutes cache
+  if (fromCache.date > Date.now() - 1000 * 60 * 5) {
+    // Get from cache and update for later
+    fetchFresh().then((fresh) => {
+      // Save to cache
+      pageCache.pages.set(pageId, {
+        date: Date.now(),
+        recordMap: fresh,
+      });
     });
-  });
+  }
 
   return fromCache.recordMap;
 }
