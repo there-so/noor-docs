@@ -4,7 +4,7 @@ export default function Dashboard() {
   return (
     <>
       <div className="flex items-center justify-center mt-12">
-        <div className="max-w-lg p-12 rounded-lg bg-slate-100 ">
+        <div className="max-w-2xl p-12 rounded-lg bg-slate-100 ">
           <h2 className="text-slate-400 font-bold mb-2">
             All-new Noor app coming soon.{" "}
           </h2>
@@ -29,7 +29,7 @@ export default function Dashboard() {
             concepts in 5 bullet-points:
             <ol className="list-decimal	mt-3">
               <li>
-                Lives in the background <a href="#f2">[2]</a>
+                Stays out of your way in the background <a href="#f2">[2]</a>
               </li>
               <li>
                 Assume default is deep work (unless they decide to collaborate)
@@ -61,15 +61,12 @@ export default function Dashboard() {
             Taking the brain power you need to get in the zone.
           </p>
           <br />
-          <p>We think differently (Was that Apple's? Ugh).</p>
-          <br />
-
           <p>
-            We think differently (Was that Apple's? Ugh). We've took our
-            learnings from using our app for hundreds of hours each week
-            ourselves and our friends in other teams. Now we're making an
-            all-new app in native Rust to make it reliable, snappy, and of
-            stellar quality.
+            We think differently (Was that Apple's? Ugh). After using our app
+            for hundreds of hours each week ourselves and our friends we set out
+            to make an all-new app. This time in native Rust to have full
+            control over resources to make it snappy, reliable and of stellar
+            quality.
           </p>
 
           <br />
